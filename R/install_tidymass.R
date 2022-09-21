@@ -1,9 +1,13 @@
 install_tidymass <-
   function(packages = c("core", "all"),
            which_package,
-           from = c("gitee", "gitlab", "github")) {
+           from = c("gitlab", "github", "gitee"),
+           method = c("auto", "internal", "libcurl",
+                      "wget", "curl")) {
     packages <- match.arg(packages)
     from <- match.arg(from)
+    method <- match.arg(method)
+    
     temp_path <- tempdir()
     dir.create(temp_path, showWarnings = FALSE, recursive = TRUE)
     unlink(x = file.path(temp_path, dir(temp_path)),
@@ -40,7 +44,7 @@ install_tidymass <-
         "metid",
         "massstat",
         "massqc",
-        "massprocessor",
+        "massprocesser",
         "masscleaner",
         "metpath",
         "tidymass"
@@ -89,8 +93,11 @@ install_tidymass <-
             )
         }
         
-        utils::download.file(url = url,
-                             destfile = file.path(temp_path, file$file_name.y[file$package == x]))
+        utils::download.file(
+          url = url,
+          destfile = file.path(temp_path, file$file_name.y[file$package == x]),
+          method = method
+        )
         
         tryCatch(
           detach(name = paste0("package:", x)),
@@ -107,3 +114,42 @@ install_tidymass <-
       })
     message("All done.")
   }
+
+
+
+package_list %>%
+  purrr::walk(function(x) {
+    message("Install ", x, "...")
+    ##install masstools first
+    if (from == "github") {
+      url <-
+        paste0(
+          "https://github.com/tidymass/packages_repo/raw/main/packages/",
+          file$file_name.y[file$package == x]
+        )
+    }
+    
+    if (from == "gitlab") {
+      url <-
+        paste0(
+          "https://gitlab.com/tidymass/packages_repo/-/raw/main/packages/",
+          file$file_name.y[file$package == x],
+          "?inline=false"
+        )
+    }
+    
+    if (from == "gitee") {
+      url <-
+        paste0(
+          "https://gitee.com/tidymass/packages_repo/raw/main/packages/",
+          file$file_name.y[file$package == x]
+        )
+    }
+    
+    utils::download.file(
+      url = url,
+      destfile = file.path(".", file$file_name.y[file$package == x]),
+      method = method
+    )
+    
+  })
